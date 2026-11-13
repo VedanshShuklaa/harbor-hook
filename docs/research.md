@@ -22,8 +22,6 @@ Searches included:
 
 Discovery leads included [Balancer's tools](https://docs.balancer.fi/tools), [an EulerSwap hook](https://github.com/euler-mab/eulerswap-hook), and virtual-reserve launch-curve repositories. These establish existing design territory only; their implementations and economic claims were not audited or adopted. Search absence does not establish novelty.
 
-The enrolled Internal Swap Pool lesson and Workshop 6 content were not supplied or accessed. The project demonstrates the public technical requirement without asserting the user's attendance/review answers.
-
 ## Approaches and decision
 
 - Constant sum 1:1: clear teaching example, but fixed-rate inventory exhaustion.

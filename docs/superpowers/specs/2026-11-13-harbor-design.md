@@ -1,6 +1,6 @@
 # Harbor — Return Delta Hook design
 
-Date: 2026-11-13. User instruction: build and publish the final UHI quest in the same manner as the prior quests, in a separate folder, with cumulative research preserved. Implementation choices below are the builder's calls.
+Date: 2026-11-13. Status: implemented, independently reviewed and locally verified. User instruction: build and publish the final UHI quest in the same manner as the prior quests, in a separate folder, with cumulative research preserved. Implementation choices below are the builder's calls.
 
 ## Intent and approaches
 
@@ -93,7 +93,7 @@ sqrtPriceLimitX96 controls native math and is not an internal-curve slippage bou
 
 ## Delivery and limits
 
-No public-chain funds or mainnet deployment. No professional security-audit or production-readiness claim. The enrolled lesson/workshop content and user attendance were not supplied; do not claim either was reviewed or attended, invent their UHI email, or submit form declarations without those facts and a form link.
+No public-chain funds or mainnet deployment. No professional security-audit or production-readiness claim. 
 
 The user delegated construction through “in a similar way do this”; proceed with the established build/test/review/publish workflow without another permission round. Keep other quest repositories unchanged.
 

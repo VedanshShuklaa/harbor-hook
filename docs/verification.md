@@ -28,3 +28,7 @@ A sample run is recorded in local-check.json. Addresses and transaction hashes r
 Initial compiled stubs produced expected failing tests before implementation: math 8 failures, liquidity 4, real swap callback 4, router 4. An unmined CREATE2 address was also rejected before salt mining was added.
 
 These checks demonstrate behavior under the tested standard-token model. They are not a professional security audit, economic backtest or proof of suitability for real funds.
+
+## Independent source review
+
+A fresh reviewer examined all tracked non-vendor files at d395b7cd90e4822ccec4c7c3f7316175c3c32b3f, checked upstream delta handling, and independently reproduced 44 passing tests and a fresh Anvil acceptance run. No substantiated Critical, Important or Minor defects were reported. The verdict supports educational publication; it does not establish professional-audit status, production safety, exhaustive economic correctness, profitability, novelty, a peg or support for nonstandard tokens.
