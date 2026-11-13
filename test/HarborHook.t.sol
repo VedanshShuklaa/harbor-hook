@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {HarborHook} from "../src/HarborHook.sol";
 
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
@@ -18,6 +18,9 @@ import {HarborRouter} from "../src/HarborRouter.sol";
 import {BaseHook} from "@openzeppelin/uniswap-hooks/src/base/BaseHook.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {HostileToken} from "./utils/HostileToken.sol";
+
+import {HarborSalt} from "../script/DeployHarbor.s.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract HarborHookTest is Deployers {
     using StateLibrary for IPoolManager;
@@ -129,12 +132,12 @@ contract HarborHookTest is Deployers {
         uint256 beforeB = b.balanceOf(address(this));
         BalanceDelta first = swap(key, true, 50 ether, "");
         assertEq(first.amount1(), 50 ether);
-        assertEq(uint256(uint128(-first.amount0())), input);
+        assertEq(uint256(SafeCast.toUint128(-first.amount0())), input);
         assertEq(b.balanceOf(address(this)) - beforeB, 50 ether);
         (input,) = hook.quoteExactOutput(false, 10 ether);
         BalanceDelta second = swap(key, false, 10 ether, "");
         assertEq(second.amount0(), 10 ether);
-        assertEq(uint256(uint128(-second.amount1())), input);
+        assertEq(uint256(SafeCast.toUint128(-second.amount1())), input);
         assertBacking();
     }
 
@@ -184,7 +187,7 @@ contract HarborHookTest is Deployers {
     function testLpShareTransferAndRedemptionAreOwnerBound() public {
         seed();
         address bob = makeAddr("LP Bob");
-        hook.transfer(bob, 100 ether);
+        assertTrue(hook.transfer(bob, 100 ether));
         vm.prank(bob);
         (uint256 x, uint256 y) = hook.removeLiquidity(100 ether, 100 ether, 100 ether, bob, block.timestamp);
         assertEq(x, 100 ether);
@@ -275,10 +278,10 @@ contract HarborHookTest is Deployers {
 
     function testDirectTokenAndClaimDonationsDoNotInflateShares() public {
         seed();
-        a.transfer(address(hook), 50 ether);
-        b.transfer(address(hook), 50 ether);
+        assertTrue(a.transfer(address(hook), 50 ether));
+        assertTrue(b.transfer(address(hook), 50 ether));
         claimsRouter.deposit(currency0, address(this), 50 ether);
-        manager.transfer(address(hook), uint160(address(a)), 50 ether);
+        assertTrue(manager.transfer(address(hook), uint160(address(a)), 50 ether));
         assertEq(hook.reserve0(), 1000 ether);
         assertEq(hook.totalSupply(), 1000 ether);
         (,, uint256 shares) = hook.addLiquidity(10 ether, 10 ether, 10 ether, address(this), block.timestamp);
@@ -293,8 +296,8 @@ contract HarborHookTest is Deployers {
         seed();
         uint256 beforeA = a.balanceOf(address(this));
         BalanceDelta first = harborRouter.swap(key, true, -100 ether, 0, block.timestamp, address(this));
-        uint256 output = uint256(uint128(first.amount1()));
-        harborRouter.swap(key, false, -int256(output), 0, block.timestamp, address(this));
+        uint256 output = uint256(SafeCast.toUint128(first.amount1()));
+        harborRouter.swap(key, false, -SafeCast.toInt256(output), 0, block.timestamp, address(this));
         assertLt(a.balanceOf(address(this)), beforeA);
         assertGt(hook.reserve0(), 1000 ether);
         uint256 held = hook.reserve0();
@@ -396,7 +399,7 @@ contract HarborHookTest is Deployers {
         for (uint256 i; i < 4; ++i) {
             uint256 v = 9 * hook.totalSupply();
             uint256 product = (hook.reserve0() + v) * (hook.reserve1() + v);
-            harborRouter.swap(key, i % 2 == 0, -int256(amount), 0, block.timestamp, address(this));
+            harborRouter.swap(key, i % 2 == 0, -SafeCast.toInt256(amount), 0, block.timestamp, address(this));
             assertGe((hook.reserve0() + v) * (hook.reserve1() + v), product);
             hook.addLiquidity(10 ether, 10 ether, 0, address(this), block.timestamp);
             hook.removeLiquidity(1 ether, 0, 0, address(this), block.timestamp);
@@ -404,5 +407,51 @@ contract HarborHookTest is Deployers {
             assertGe(hook.reserve0(), (hook.totalSupply() + 9) / 10);
             assertGe(hook.reserve1(), (hook.totalSupply() + 9) / 10);
         }
+    }
+
+    function testCreate2DeploymentChecksPermissionsAndInitializesShares() public {
+        bytes32 hash =
+            keccak256(abi.encodePacked(type(HarborHook).creationCode, abi.encode(manager, address(a), address(b))));
+        (bytes32 salt, address predicted) = HarborSalt.find(address(this), hash);
+        HarborHook real = new HarborHook{salt: salt}(manager, address(a), address(b));
+        assertEq(address(real), predicted);
+        assertEq(real.name(), "Harbor LP");
+        assertEq(real.symbol(), "hLP");
+        manager.initialize(real.poolKey(), SQRT_PRICE_1_1);
+        a.approve(predicted, type(uint256).max);
+        b.approve(predicted, type(uint256).max);
+        real.addLiquidity(1000 ether, 1000 ether, 1000 ether, address(this), block.timestamp);
+        BalanceDelta result =
+            harborRouter.swap(real.poolKey(), true, -100 ether, 98 ether, block.timestamp, address(this));
+        assertEq(result.amount1(), 98_911_870_414_558_559_985);
+        assertEq(manager.balanceOf(predicted, uint160(address(a))), real.reserve0());
+    }
+
+    function testRealConstructorRejectsUnsupportedDecimals() public {
+        HostileToken evil = new HostileToken(6);
+        address first = address(evil) < address(a) ? address(evil) : address(a);
+        address second = address(evil) < address(a) ? address(a) : address(evil);
+        bytes32 hash = keccak256(abi.encodePacked(type(HarborHook).creationCode, abi.encode(manager, first, second)));
+        (bytes32 salt,) = HarborSalt.find(address(this), hash);
+        vm.expectRevert(HarborHook.InvalidToken.selector);
+        new HarborHook{salt: salt}(manager, first, second);
+    }
+
+    function testDemo() public {
+        seed();
+        console2.log("Native concentrated liquidity:", manager.getLiquidity(key.toId()));
+        console2.log("Initial LP shares:", hook.totalSupply());
+        (uint256 out, uint256 fee) = hook.quoteExactInput(true, 100 ether);
+        console2.log("100 token input, output in base units:", out);
+        console2.log("Input fee retained for LPs:", fee);
+        harborRouter.swap(key, true, -100 ether, out, block.timestamp, address(this));
+        console2.log("Reserve 0 after swap:", hook.reserve0());
+        console2.log("Reserve 1 after swap:", hook.reserve1());
+        (uint256 x, uint256 y) =
+            hook.removeLiquidity(hook.balanceOf(address(this)), 0, 0, address(this), block.timestamp);
+        console2.log("Full LP exit token 0:", x);
+        console2.log("Full LP exit token 1:", y);
+        assertEq(hook.totalSupply(), 0);
+        assertBacking();
     }
 }

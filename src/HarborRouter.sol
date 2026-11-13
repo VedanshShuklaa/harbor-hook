@@ -72,7 +72,11 @@ contract HarborRouter is IUnlockCallback, ReentrancyGuard {
         int128 inputDelta = req.params.zeroForOne ? delta.amount0() : delta.amount1();
         int128 outputDelta = req.params.zeroForOne ? delta.amount1() : delta.amount0();
         if (inputDelta >= 0 || outputDelta <= 0) revert InvalidDelta();
+        // The sign check above proves negativity; widening before negation also handles int128.min.
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 amountIn = uint256(-int256(inputDelta));
+        // The sign check above proves positivity and uint256 has more bits than int128.
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 amountOut = uint256(int256(outputDelta));
         if (req.params.amountSpecified < 0) {
             uint256 requested = uint256(-(req.params.amountSpecified + 1)) + 1;

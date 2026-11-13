@@ -1,0 +1,29 @@
+{
+  "result": "PASS",
+  "chain_id": 31337,
+  "hook": "0x54f7139a700193af3e3372fa3cbd8a921b7adaa8",
+  "initial_reserves": [
+    1000000000000000000000,
+    1000000000000000000000
+  ],
+  "exact_input": {
+    "transaction": "0x8300d8a38df9dd1d635f223c02e295a941a26f49ce7dbfe4b67ac37d0f0ba54c",
+    "input": 100000000000000000000,
+    "output": 98911870414558559985,
+    "fee": 100000000000000000
+  },
+  "reverse_exact_output": {
+    "transaction": "0x7b0bd740e6b150fe5d5226a9cf1405283cd42015d10b5c9eaea3e619390e4c8f",
+    "input": 9822595766812840037,
+    "output": 10000000000000000000,
+    "fee": 9822595766812841
+  },
+  "native_liquidity": 0,
+  "claims_match_reserves": true,
+  "full_exit_transaction": "0x9329789875a5a049ea92038e280c5ff527c9d5fb718d1c054467245ccbeb1f7d",
+  "final_reserves": [
+    0,
+    0
+  ],
+  "final_lp_supply": 0
+}

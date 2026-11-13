@@ -36,6 +36,8 @@ contract HostileToken is ERC20 {
         if (callback != address(0)) {
             attempted = true;
             (bool ok, bytes memory reason) = callback.call(callbackData);
+            // Deliberately keep only the revert selector for the reentrancy assertion.
+            // forge-lint: disable-next-line(unsafe-typecast)
             lastError = ok ? bytes4(0) : bytes4(reason);
         }
         return super.transferFrom(from, to, amount);
