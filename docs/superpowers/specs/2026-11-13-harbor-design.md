@@ -93,7 +93,7 @@ sqrtPriceLimitX96 controls native math and is not an internal-curve slippage bou
 
 ## Delivery and limits
 
-No public-chain funds or mainnet deployment. No professional security-audit or production-readiness claim. 
+No public-chain funds or mainnet deployment. No professional security-audit or production-readiness claim.
 
 The user delegated construction through “in a similar way do this”; proceed with the established build/test/review/publish workflow without another permission round. Keep other quest repositories unchanged.
 
